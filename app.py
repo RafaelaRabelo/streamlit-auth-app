@@ -34,13 +34,18 @@ def build_login_url():
 def handle_redirect():
     query_params = st.query_params
     if "code" in query_params:
-        code = query_params["code"][0]
-        client = OAuth2Session(CLIENT_ID, CLIENT_SECRET, redirect_uri=REDIRECT_URI)
-        token = client.fetch_token(TOKEN_URL, code=code)
-        client.token = token  # ✅ <-- ESSENCIAL!
-        userinfo = client.get(USERINFO_URL).json()
-        st.session_state.email = userinfo["email"]
-        st.query_params.clear()  # limpa a URL após login
+        try:
+            code = query_params["code"][0]
+            client = OAuth2Session(CLIENT_ID, CLIENT_SECRET, redirect_uri=REDIRECT_URI)
+            token = client.fetch_token(TOKEN_URL, code=code)
+            client.token = token
+            userinfo = client.get(USERINFO_URL).json()
+            st.session_state.email = userinfo["email"]
+            st.query_params.clear()  # limpa a URL após sucesso
+        except Exception as e:
+            st.error(f"Erro no login: {e}")
+            st.query_params.clear()  # evita repetir o erro
+
 
 def main():
     handle_redirect()
