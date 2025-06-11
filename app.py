@@ -32,15 +32,15 @@ def build_login_url():
 
 
 def handle_redirect():
-    query_params = st.experimental_get_query_params()
+    query_params = st.query_params
     if "code" in query_params:
         code = query_params["code"][0]
         client = OAuth2Session(CLIENT_ID, CLIENT_SECRET, redirect_uri=REDIRECT_URI)
         token = client.fetch_token(TOKEN_URL, code=code)
-        userinfo = client.get(USERINFO_URL, token=token).json()
+        client.token = token  # ✅ <-- ESSENCIAL!
+        userinfo = client.get(USERINFO_URL).json()
         st.session_state.email = userinfo["email"]
-        st.experimental_set_query_params()  # limpa os parâmetros da URL
-
+        st.query_params.clear()  # limpa a URL após login
 
 def main():
     handle_redirect()
