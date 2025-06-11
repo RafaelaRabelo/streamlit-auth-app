@@ -39,11 +39,11 @@ def handle_redirect():
         try:
             code = query_params["code"][0]
             client = OAuth2Session(CLIENT_ID, CLIENT_SECRET, redirect_uri=REDIRECT_URI)
-            token = client.fetch_token(TOKEN_URL, code=code)
+            token = client.fetch_token(TOKEN_URL, code=code, redirect_uri=REDIRECT_URI)
             client.token = token
             userinfo = client.get(USERINFO_URL).json()
             st.session_state.email = userinfo["email"]
-            st.query_params.clear()  # Limpa a URL
+            st.query_params.clear()
         except Exception as e:
             st.error(f"Erro no login: {e}")
             st.query_params.clear()
