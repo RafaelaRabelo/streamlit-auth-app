@@ -1,3 +1,4 @@
 streamlit
 httpx-oauth
 python-dotenv
+authlib
