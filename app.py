@@ -40,23 +40,26 @@ def build_login_url():
 # 🔁 Processa redirecionamento do Google
 def handle_redirect():
     query_params = st.query_params
-    if "code" in query_params and not st.session_state.email:
-        try:
-            code = query_params["code"]  # <- sem o [0] !!!
-            st.info("🔄 Solicitando token...")
+    code = query_params.get("code")
 
-            client = OAuth2Session(
-                client_id=CLIENT_ID,
-                client_secret=CLIENT_SECRET,
-                redirect_uri=REDIRECT_URI
-            )
+    if code and not st.session_state.email:
+        # Se o código vier em lista (por segurança):
+        if isinstance(code, list):
+            code = code[0]
+
+        st.info(f"🔑 Código recebido: {code}")
+
+        try:
+            st.info("📨 Solicitando token...")
+            client = OAuth2Session(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, redirect_uri=REDIRECT_URI)
 
             token = client.fetch_token(
                 TOKEN_URL,
                 code=code,
                 redirect_uri=REDIRECT_URI,
-                include_client_id=True
+                include_client_id=True,
             )
+
             client.token = token
             userinfo = client.get(USERINFO_URL).json()
             st.session_state.email = userinfo["email"]
@@ -65,6 +68,8 @@ def handle_redirect():
         except Exception as e:
             st.error("❌ Erro no login:")
             st.exception(e)
+
+        finally:
             st.query_params.clear()
 
 
