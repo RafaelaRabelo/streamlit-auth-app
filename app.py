@@ -1,91 +1,70 @@
 import os
-from dotenv import load_dotenv
-from authlib.integrations.requests_client import OAuth2Session
 import streamlit as st
-from urllib.parse import urlencode
+import asyncio
+from httpx_oauth.clients.google import GoogleOAuth2
+from dotenv import load_dotenv
 
+# Carrega variáveis do .env
 load_dotenv()
 
-# 🔐 Credenciais e URLs
 CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
-SCOPE = "openid email profile"
 
-AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
-TOKEN_URL = "https://oauth2.googleapis.com/token"
-USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
+# Inicializa cliente Google OAuth2
+client = GoogleOAuth2(CLIENT_ID, CLIENT_SECRET)
 
-# Inicializa estado
-if "email" not in st.session_state:
-    st.session_state.email = None
 
-# Debug das variáveis carregadas
-st.write("🔐 CLIENT_ID:", CLIENT_ID)
-st.write("🔐 CLIENT_SECRET:", CLIENT_SECRET[:5] + "..." if CLIENT_SECRET else None)
-st.write("🔁 REDIRECT_URI:", REDIRECT_URI)
+async def get_authorization_url():
+    return await client.get_authorization_url(
+        redirect_uri=REDIRECT_URI,
+        scope=["profile", "email"]
+    )
 
-# 🔗 Monta URL de login
-def build_login_url():
-    params = {
-        "client_id": CLIENT_ID,
-        "response_type": "code",
-        "scope": SCOPE,
-        "redirect_uri": REDIRECT_URI,
-        "access_type": "offline",
-        "prompt": "consent"
-    }
-    return f"{AUTH_URL}?{urlencode(params)}"
 
-# 🔁 Processa redirecionamento do Google
-def handle_redirect():
-    query_params = st.query_params
-    st.write("📦 query_params:", query_params)
+async def get_access_token(code):
+    return await client.get_access_token(code, REDIRECT_URI)
 
-    code = query_params.get("code")
 
-    if code and not st.session_state.email:
-        if isinstance(code, list):
-            code = code[0]
+async def get_user_info(token):
+    return await client.get_id_email(token)
 
-        # st.write("🔑 Código recebido:", code)
 
-        try:
-            st.info("📨 Solicitando token...")
-            client = OAuth2Session(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, redirect_uri=REDIRECT_URI)
-
-            token = client.fetch_token(
-                TOKEN_URL,
-                code=code,
-                redirect_uri=REDIRECT_URI,
-                include_client_id=True,
-            )
-
-            client.token = token
-            userinfo = client.get(USERINFO_URL).json()
-            st.session_state.email = userinfo["email"]
-            st.success(f"✅ Logado como: {userinfo['email']}")
-
-        except Exception as e:
-            st.error("❌ Erro no login:")
-            st.exception(e)
-
-        finally:
-            st.query_params.clear()
-
-# 🧠 Interface principal
 def main():
-    handle_redirect()
+    st.set_page_config(page_title="Login com Google")
 
-    st.title("🔒 Autenticação Google com Streamlit + Authlib")
+    # Verifica se já temos o e-mail salvo
+    if "email" not in st.session_state:
+        st.session_state.email = None
+
+    st.title("🔒 Autenticação com Google - httpx_oauth")
+
+    query_params = st.experimental_get_query_params()
+    code = query_params.get("code", [None])[0]
 
     if st.session_state.email:
-        st.success(f"✅ Logado como: {st.session_state.email}")
-        st.write("🎉 Bem-vindo à aplicação segura!")
+        st.success(f"✅ Você está logado como: {st.session_state.email}")
+    elif code:
+        st.info("🔄 Processando código de autorização...")
+
+        try:
+            # Obtem token
+            token = asyncio.run(get_access_token(code))
+            # Obtem email
+            _, email = asyncio.run(get_user_info(token["access_token"]))
+            st.session_state.email = email
+            st.success(f"✅ Login realizado: {email}")
+            st.experimental_set_query_params()  # Limpa URL
+
+        except Exception as e:
+            st.error("❌ Erro ao obter token:")
+            st.exception(e)
+
     else:
-        st.warning("Você não está logado.")
-        login_url = build_login_url()
-        st.markdown(f"[Clique aqui para login com Google]({login_url})")
+        # Exibe botão de login se não estiver logado
+        if st.button("Login com Google"):
+            authorization_url = asyncio.run(get_authorization_url())
+            st.markdown(f"[Clique aqui para login com Google]({authorization_url})")
 
 if __name__ == "__main__":
     main()
