@@ -38,7 +38,6 @@ def main():
 
     st.title("🔒 Autenticação com Google - httpx_oauth")
 
-    # ✅ Substituído: st.experimental_get_query_params()
     query_params = st.query_params
     code = query_params.get("code", [None])[0]
 
