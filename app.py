@@ -38,12 +38,11 @@ def handle_redirect():
     if "code" in query_params and not st.session_state.email:
         try:
             code = query_params["code"][0]
-            client = OAuth2Session(CLIENT_ID, CLIENT_SECRET, redirect_uri=REDIRECT_URI)
+            client = OAuth2Session(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, redirect_uri=REDIRECT_URI)
             token = client.fetch_token(TOKEN_URL, code=code, redirect_uri=REDIRECT_URI)
             client.token = token
             userinfo = client.get(USERINFO_URL).json()
             st.session_state.email = userinfo["email"]
-            st.query_params.clear()
         except Exception as e:
             st.error(f"Erro no login: {e}")
             st.query_params.clear()
