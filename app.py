@@ -39,7 +39,12 @@ def handle_redirect():
         try:
             code = query_params["code"][0]
             client = OAuth2Session(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, redirect_uri=REDIRECT_URI)
-            token = client.fetch_token(TOKEN_URL, code=code, redirect_uri=REDIRECT_URI)
+            token = client.fetch_token(
+                TOKEN_URL,
+                code=code,
+                redirect_uri=REDIRECT_URI,
+                include_client_id=True
+            )
             client.token = token
             userinfo = client.get(USERINFO_URL).json()
             st.session_state.email = userinfo["email"]
