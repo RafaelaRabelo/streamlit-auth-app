@@ -38,18 +38,37 @@ def handle_redirect():
     if "code" in query_params and not st.session_state.email:
         try:
             code = query_params["code"][0]
-            client = OAuth2Session(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, redirect_uri=REDIRECT_URI)
+            st.info(f"🔑 Código recebido: {code}")
+
+            client = OAuth2Session(
+                client_id=CLIENT_ID,
+                client_secret=CLIENT_SECRET,
+                redirect_uri=REDIRECT_URI,
+            )
+
+            st.write("➡️ Solicitando token...")
             token = client.fetch_token(
                 TOKEN_URL,
                 code=code,
                 redirect_uri=REDIRECT_URI,
                 include_client_id=True
             )
+            st.success("✅ Token recebido com sucesso!")
+            st.json(token)  # Exibe o token (remova em produção)
+
             client.token = token
-            userinfo = client.get(USERINFO_URL).json()
-            st.session_state.email = userinfo["email"]
+
+            st.write("👤 Buscando informações do usuário...")
+            userinfo_response = client.get(USERINFO_URL)
+            st.write("🔍 Status:", userinfo_response.status_code)
+            st.json(userinfo_response.json())
+
+            userinfo = userinfo_response.json()
+            st.session_state.email = userinfo.get("email")
+
         except Exception as e:
-            st.error(f"Erro no login: {e}")
+            st.error("❌ Erro no login:")
+            st.exception(e)  # Mostra o stack trace completo
             st.query_params.clear()
 
 # 🧠 Interface principal
