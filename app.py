@@ -35,10 +35,13 @@ def build_login_url():
 # 🔁 Processa redirecionamento do Google
 def handle_redirect():
     query_params = st.query_params
+    st.write("🔍 Query params:", query_params)
+
     if "code" in query_params and not st.session_state.email:
         try:
             code = query_params["code"][0]
-            st.info(f"🔑 Código recebido: {code}")
+            st.write("📥 Código recebido:", code)
+            st.write("📤 Redirect URI usado:", REDIRECT_URI)
 
             client = OAuth2Session(
                 client_id=CLIENT_ID,
@@ -46,30 +49,23 @@ def handle_redirect():
                 redirect_uri=REDIRECT_URI,
             )
 
-            st.write("➡️ Solicitando token...")
             token = client.fetch_token(
                 TOKEN_URL,
                 code=code,
                 redirect_uri=REDIRECT_URI,
-                include_client_id=True
+                include_client_id=True,
             )
-            st.success("✅ Token recebido com sucesso!")
-            st.json(token)  # Exibe o token (remova em produção)
+            st.success("Token obtido!")
+            st.json(token)
 
-            client.token = token
-
-            st.write("👤 Buscando informações do usuário...")
-            userinfo_response = client.get(USERINFO_URL)
-            st.write("🔍 Status:", userinfo_response.status_code)
-            st.json(userinfo_response.json())
-
-            userinfo = userinfo_response.json()
+            userinfo = client.get(USERINFO_URL).json()
             st.session_state.email = userinfo.get("email")
 
         except Exception as e:
-            st.error("❌ Erro no login:")
-            st.exception(e)  # Mostra o stack trace completo
+            st.error(f"Erro ao trocar code por token:")
+            st.exception(e)
             st.query_params.clear()
+
 
 # 🧠 Interface principal
 def main():
