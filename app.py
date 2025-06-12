@@ -20,6 +20,11 @@ USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 if "email" not in st.session_state:
     st.session_state.email = None
 
+st.write("🔐 CLIENT_ID:", CLIENT_ID)
+st.write("🔐 CLIENT_SECRET:", CLIENT_SECRET[:5] + "..." if CLIENT_SECRET else None)
+st.write("🔁 REDIRECT_URI:", REDIRECT_URI)
+st.write("📥 Código recebido:", code)
+
 # 🔗 Monta URL de login
 def build_login_url():
     params = {
