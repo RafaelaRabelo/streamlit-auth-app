@@ -48,7 +48,7 @@ def handle_redirect():
         if isinstance(code, list):
             code = code[0]
 
-        st.write("🔑 Código recebido:", code)
+        # st.write("🔑 Código recebido:", code)
 
         try:
             st.info("📨 Solicitando token...")
