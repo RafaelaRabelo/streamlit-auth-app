@@ -20,10 +20,10 @@ USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 if "email" not in st.session_state:
     st.session_state.email = None
 
+# Debug das variáveis carregadas
 st.write("🔐 CLIENT_ID:", CLIENT_ID)
 st.write("🔐 CLIENT_SECRET:", CLIENT_SECRET[:5] + "..." if CLIENT_SECRET else None)
 st.write("🔁 REDIRECT_URI:", REDIRECT_URI)
-st.write("📥 Código recebido:", code)
 
 # 🔗 Monta URL de login
 def build_login_url():
@@ -40,14 +40,15 @@ def build_login_url():
 # 🔁 Processa redirecionamento do Google
 def handle_redirect():
     query_params = st.query_params
+    st.write("📦 query_params:", query_params)
+
     code = query_params.get("code")
 
     if code and not st.session_state.email:
-        # Se o código vier em lista (por segurança):
         if isinstance(code, list):
             code = code[0]
 
-        st.info(f"🔑 Código recebido: {code}")
+        st.write("🔑 Código recebido:", code)
 
         try:
             st.info("📨 Solicitando token...")
@@ -63,7 +64,7 @@ def handle_redirect():
             client.token = token
             userinfo = client.get(USERINFO_URL).json()
             st.session_state.email = userinfo["email"]
-            st.success("🔓 Login bem-sucedido!")
+            st.success(f"✅ Logado como: {userinfo['email']}")
 
         except Exception as e:
             st.error("❌ Erro no login:")
@@ -71,8 +72,6 @@ def handle_redirect():
 
         finally:
             st.query_params.clear()
-
-
 
 # 🧠 Interface principal
 def main():
