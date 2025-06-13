@@ -3,52 +3,59 @@ import base64
 import streamlit as st
 from streamlit_option_menu import option_menu
 from dotenv import load_dotenv
-import asyncio
-from httpx_oauth.clients.google import GoogleOAuth2
+from authlib.integrations.requests_client import OAuth2Session
+from urllib.parse import urlencode
 
 # Load environment variables
 load_dotenv()
 CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
+SCOPE = "openid email profile"
 
-# OAuth2 Client
-oauth_client = GoogleOAuth2(CLIENT_ID, CLIENT_SECRET)
+AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
+TOKEN_URL = "https://oauth2.googleapis.com/token"
+USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 
-# Auth function
-def login_with_google():
+# Session state
+if "email" not in st.session_state:
+    st.session_state.email = None
+
+# Login URL
+def build_login_url():
+    params = {
+        "client_id": CLIENT_ID,
+        "response_type": "code",
+        "scope": SCOPE,
+        "redirect_uri": REDIRECT_URI,
+        "access_type": "offline",
+        "prompt": "consent"
+    }
+    return f"{AUTH_URL}?{urlencode(params)}"
+
+# Handle OAuth2
+def handle_auth():
     query_params = st.query_params
-    code = query_params.get("code", [None])[0]
+    code = query_params.get("code", [None])[0] if isinstance(query_params.get("code"), list) else query_params.get("code")
 
-    if "email" not in st.session_state:
-        st.session_state.email = None
-
-    if st.session_state.email:
-        st.success(f"✅ Logado como: {st.session_state.email}")
-        return True
-
-    elif code:
-        st.info("📨 Solicitando token...")
+    if code and not st.session_state.email:
         try:
-            token = asyncio.run(oauth_client.get_access_token(code, REDIRECT_URI))
-            _, email = asyncio.run(oauth_client.get_id_email(token["access_token"]))
-            st.session_state.email = email
-            st.success(f"✅ Logado como: {email}")
-            st.experimental_set_query_params()
-            return True
+            st.info("📨 Solicitando token...")
+            client = OAuth2Session(CLIENT_ID, CLIENT_SECRET, redirect_uri=REDIRECT_URI)
+            token = client.fetch_token(
+                TOKEN_URL,
+                code=code,
+                include_client_id=True,
+                redirect_uri=REDIRECT_URI,
+            )
+            client.token = token
+            userinfo = client.get(USERINFO_URL).json()
+            st.session_state.email = userinfo["email"]
+            st.success(f"✅ Logado como: {userinfo['email']}")
+            st.query_params.clear()
         except Exception as e:
-            st.error("❌ Erro ao obter token:")
+            st.error("❌ Erro durante o login:")
             st.exception(e)
-            return False
-
-    else:
-        auth_url = asyncio.run(oauth_client.get_authorization_url(
-            redirect_uri=REDIRECT_URI,
-            scope=["profile", "email"]
-        ))
-        st.warning("Você não está logado.")
-        st.markdown(f"[Clique aqui para login com Google]({auth_url})")
-        return False
 
 # Base64 conversion
 def get_base64_of_bin_file(bin_file):
@@ -130,74 +137,78 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# 🔒 Login check
-if not login_with_google():
-    st.stop()
+# Auth flow
+handle_auth()
 
-# Sidebar menu
-with st.sidebar:
-    selected = option_menu(
-        menu_title="Menu",  
-        options=["Expectant Mother Dashboard", "Gladney Business Performance Dashboard", "About"],  
-        icons=["speedometer", "graph-up-arrow", "info-circle"], 
-        menu_icon="cast",  
-        default_index=0,
-        styles={
-            "container": {"padding": "5px", "background-color": "#FFFFFF"},
-            "icon": {"color": "#008542", "font-size": "18px"},
-            "nav-link": {
-                "font-size": "17px",
-                "text-align": "left",
-                "margin": "5px",
-                "color": "#333333",
-                "border-radius": "10px",
-            },
-            "nav-link-selected": {
-                "background-color": "#00A651",
-                "color": "white",
-                "font-weight": "bold",
-            },
-        }
-    )
+# Content flow
+if st.session_state.email:
+    with st.sidebar:
+        selected = option_menu(
+            menu_title="Menu",  
+            options=["Expectant Mother Dashboard", "Gladney Business Performance Dashboard", "About"],  
+            icons=["speedometer", "graph-up-arrow", "info-circle"], 
+            menu_icon="cast",  
+            default_index=0,
+            styles={
+                "container": {"padding": "5px", "background-color": "#FFFFFF"},
+                "icon": {"color": "#008542", "font-size": "18px"},
+                "nav-link": {
+                    "font-size": "17px",
+                    "text-align": "left",
+                    "margin": "5px",
+                    "color": "#333333",
+                    "border-radius": "10px",
+                },
+                "nav-link-selected": {
+                    "background-color": "#00A651",
+                    "color": "white",
+                    "font-weight": "bold",
+                },
+            }
+        )
 
-# Content
-st.markdown("## ")
+    st.markdown("## ")
 
-if selected == "Expectant Mother Dashboard":
+    if selected == "Expectant Mother Dashboard":
+        st.markdown("---")
+        st.markdown(
+            """
+            <iframe 
+            src="https://lookerstudio.google.com/embed/reporting/018fe7d3-8e30-4a70-86e9-ac5b71bdb662/page/p_iv91iy4nsd" 
+            frameborder="0" allowfullscreen 
+            sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox">
+            </iframe>
+            """,
+            unsafe_allow_html=True
+        )
+
+    elif selected == "Gladney Business Performance Dashboard":
+        st.markdown("---")
+        st.markdown(
+            """
+            <iframe width="100%" height="600" 
+            src="https://lookerstudio.google.com/embed/reporting/704ba1ac-c624-464f-a9f5-4f0f7ecadbfc/page/p_0cruxnlesd" 
+            frameborder="0" allowfullscreen 
+            sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox">
+            </iframe>
+            """,
+            unsafe_allow_html=True
+        )
+
+    elif selected == "About":
+        st.markdown("---")
+        st.markdown("""
+        - 🚀 **Dashboard tool**
+        - 💼 Developed by UpStart 13
+        """)
+
     st.markdown("---")
     st.markdown(
-        """
-        <iframe 
-        src="https://lookerstudio.google.com/embed/reporting/018fe7d3-8e30-4a70-86e9-ac5b71bdb662/page/p_iv91iy4nsd" 
-        frameborder="0" allowfullscreen 
-        sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox">
-        </iframe>
-        """,
+        "<center><small>Developed by UpStart 13 • 2025 🚀</small></center>",
         unsafe_allow_html=True
     )
 
-elif selected == "Gladney Business Performance Dashboard":
-    st.markdown("---")
-    st.markdown(
-        """
-        <iframe width="100%" height="600" 
-        src="https://lookerstudio.google.com/embed/reporting/704ba1ac-c624-464f-a9f5-4f0f7ecadbfc/page/p_0cruxnlesd" 
-        frameborder="0" allowfullscreen 
-        sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox">
-        </iframe>
-        """,
-        unsafe_allow_html=True
-    )
-
-elif selected == "About":
-    st.markdown("---")
-    st.markdown("""
-    - 🚀 **Dashboard tool**
-    - 💼 Developed by UpStart 13
-    """)
-
-st.markdown("---")
-st.markdown(
-    "<center><small>Developed by UpStart 13 • 2025 🚀</small></center>",
-    unsafe_allow_html=True
-)
+else:
+    login_url = build_login_url()
+    st.warning("Você não está logado.")
+    st.markdown(f"[Clique aqui para login com Google]({login_url})")
