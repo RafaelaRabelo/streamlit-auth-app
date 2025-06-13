@@ -1,6 +1,14 @@
-import os
-import base64
+
 import streamlit as st
+import os
+
+# Redireciona manualmente caso o usuário acesse diretamente "/login"
+if st.query_params.get("code") is None and os.environ.get("REDIRECT_URI", "").endswith("/login"):
+    if st.requested_url and "/login" in st.requested_url:
+        st.experimental_set_query_params()  # Limpa a URL
+        st.switch_page("/")  # Recarrega para a página principal
+
+import base64
 from streamlit_option_menu import option_menu
 from dotenv import load_dotenv
 from authlib.integrations.requests_client import OAuth2Session
