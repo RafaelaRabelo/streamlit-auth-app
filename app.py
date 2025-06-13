@@ -12,12 +12,13 @@ CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
 SCOPE = "openid email profile"
+st.write("🔁 REDIRECT_URI usado:", REDIRECT_URI)
+
 
 AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 
-st.write("🔁 REDIRECT_URI usado:", REDIRECT_URI)
 
 # Session state
 if "email" not in st.session_state:
