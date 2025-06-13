@@ -17,6 +17,8 @@ AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 
+st.write("🔁 REDIRECT_URI usado:", REDIRECT_URI)
+
 # Session state
 if "email" not in st.session_state:
     st.session_state.email = None
