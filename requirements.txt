@@ -1,6 +1,3 @@
 streamlit
-httpx-oauth
 python-dotenv
-authlib
-httpx
-streamlit-option-menu
+httpx-oauth==0.10.1
