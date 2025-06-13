@@ -6,26 +6,16 @@ from dotenv import load_dotenv
 from authlib.integrations.requests_client import OAuth2Session
 from urllib.parse import urlencode
 
-# 🛠️ Deve ser a primeira chamada do Streamlit
-st.set_page_config(
-    page_title="Dashboard - Gladney",
-    page_icon="📊",
-    layout="wide"
-)
-
-# Agora sim, pode fazer debug, prints e lógica
+# Load environment variables
 load_dotenv()
 CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
-st.write("🔁 REDIRECT_URI usado:", REDIRECT_URI)
-
-
+SCOPE = "openid email profile"
 
 AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
-
 
 # Session state
 if "email" not in st.session_state:
