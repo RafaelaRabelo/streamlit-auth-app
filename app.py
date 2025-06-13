@@ -1,26 +1,25 @@
-
-import streamlit as st
 import os
-
-# Redireciona manualmente caso o usuário acesse diretamente "/login"
-if st.query_params.get("code") is None and os.environ.get("REDIRECT_URI", "").endswith("/login"):
-    if st.requested_url and "/login" in st.requested_url:
-        st.experimental_set_query_params()  # Limpa a URL
-        st.switch_page("/")  # Recarrega para a página principal
-
 import base64
+import streamlit as st
 from streamlit_option_menu import option_menu
 from dotenv import load_dotenv
 from authlib.integrations.requests_client import OAuth2Session
 from urllib.parse import urlencode
 
-# Load environment variables
+# 🛠️ Deve ser a primeira chamada do Streamlit
+st.set_page_config(
+    page_title="Dashboard - Gladney",
+    page_icon="📊",
+    layout="wide"
+)
+
+# Agora sim, pode fazer debug, prints e lógica
 load_dotenv()
 CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
-SCOPE = "openid email profile"
 st.write("🔁 REDIRECT_URI usado:", REDIRECT_URI)
+
 
 
 AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
